@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAR QUICK RECIPE</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif; background: #111; color: #fff; }
+header { position: sticky; top: 0; z-index: 10; background: #111; padding: 16px; border-bottom: 1px solid #333; }
+h1 { margin: 0 0 12px; font-size: 22px; letter-spacing: 0.08em; }
+.search { width: 100%; padding: 14px; font-size: 18px; border-radius: 10px; border: none; outline: none; }
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 0; }
+.tab { white-space: nowrap; padding: 10px 14px; border-radius: 999px; border: 1px solid #555; background: #1d1d1d; color: #fff; font-size: 14px; }
+.tab.active { background: #fff; color: #111; }
+main { padding: 12px; }
+.house { background: #1b1b1b; border: 1px solid #333; border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+.house h2 { margin: 0 0 10px; font-size: 16px; }
+.house-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px; }
+.card { background: #1a1a1a; border: 1px solid #333; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.card h2 { margin: 0 0 8px; font-size: 22px; }
+.meta { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.badge { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #333; font-size: 12px; }
+.ingredients { font-size: 18px; line-height: 1.7; margin-bottom: 10px; }
+.info { font-size: 14px; line-height: 1.8; color: #ddd; margin-bottom: 12px; }
+.method { color: #ffd36a; font-weight: 700; }
+
+.point {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #202020;
+  border: 1px solid #383838;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.point strong {
+  color: #ffd36a;
+}
+
+details.point {
+  cursor: pointer;
+}
+
+details.point summary {
+  list-style: none;
+  font-weight: 700;
+  color: #ffd36a;
+}
+
+details.point summary::-webkit-details-marker {
+  display: none;
+}
+
+.point-body {
+  margin-top: 6px;
+  color: #ddd;
+}
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tags span { padding: 5px 9px; border-radius: 999px; background: #262626; border: 1px solid #444; font-size: 12px; color: #ddd; }
+.empty { color: #aaa; text-align: center; padding: 40px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>BAR QUICK RECIPE</h1>
+  <input id="searchInput" class="search" type="text" placeholder="カクテル名・材料・気分で検索">
+  <div id="tabs" class="tabs"></div>
+</header>
+<main>
+  <section class="house">
+    <h2>HOUSE</h2>
+    <div class="house-grid">
+      <div>ウイスキー：バランタイン</div>
+      <div>ウォッカ：スミノフ</div>
+      <div>ラム：ハバナ3</div>
+      <div>ブランデー：レミー</div>
+    </div>
+  </section>
+  <div id="list"></div>
+</main>
+<script>
+const cocktails = [
+{category:"ウォッカ",name:"ウォッカリッキー",base:"ウォッカ",price:"800円",ingredients:["ウォッカ45","ライムジュース1tsp","カットライム","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"ライム",taste:["すっきり","柑橘","炭酸","軽やか"],scene:["最初の一杯","甘くないものが飲みたい","食事中"]},
+{category:"ウォッカ",name:"モスコミュール",base:"ウォッカ",price:"800円",ingredients:["ウォッカ45","カットライム","ジンジャーエール"],method:"ビルド",glass:"マグ / タンブラー",garnish:"ライム",taste:["爽快","ジンジャー","炭酸","飲みやすい"],scene:["最初の一杯","迷った時","カジュアルに飲みたい"]},
+{category:"ウォッカ",name:"ソルティドッグ",base:"ウォッカ",price:"800円",ingredients:["ウォッカ45","グレープフルーツジュース","塩スノースタイル"],method:"ビルド",glass:"オールドファッションド",garnish:"塩",taste:["すっきり","柑橘","塩味","飲みやすい"],scene:["さっぱり飲みたい","甘すぎないものがいい","定番"]},
+{category:"ウォッカ",name:"ブルドッグ",base:"ウォッカ",price:"800円",ingredients:["ウォッカ45","グレープフルーツジュース"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["すっきり","柑橘","飲みやすい"],scene:["さっぱり飲みたい","塩なしがいい","軽く飲みたい"]},
+{category:"ウォッカ",name:"カミカゼ",base:"ウォッカ",price:"900円",ingredients:["ウォッカ45","ライムジュース15","コアントロー1tsp","カットライム"],method:"シェイク",glass:"カクテルグラス",garnish:"ライム",taste:["シャープ","柑橘","ショート","クラシック"],scene:["きりっと飲みたい","バーらしい一杯","甘さ控えめ"]},
+{category:"ウォッカ",name:"コスモポリタン",base:"ウォッカ",price:"900円",ingredients:["ウォッカ20","コアントロー10","クランベリージュース20","ライムジュース10"],method:"シェイク",glass:"カクテルグラス",garnish:"ライム",taste:["甘酸っぱい","華やか","フルーティー","ショート"],scene:["華やかに飲みたい","女性人気","甘酸っぱいものが好き"]},
+{category:"ウォッカ",name:"シーブリーズ",base:"ウォッカ",price:"800円",ingredients:["ウォッカ30","グレープフルーツジュース30","クランベリージュース30"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘酸っぱい","フルーティー","すっきり"],scene:["飲みやすいものがいい","フルーツ系","軽やかに飲みたい"]},
+{category:"ウォッカ",name:"スクリュードライバー",base:"ウォッカ",price:"800円",ingredients:["ウォッカ45","オレンジジュース"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","オレンジ","飲みやすい"],scene:["お酒感を抑えたい","甘めがいい","初心者向き"]},
+{category:"ウォッカ",name:"バラライカ",base:"ウォッカ",price:"900円",ingredients:["ウォッカ30","コアントロー15","レモンジュース15"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["柑橘","シャープ","ショート","クラシック"],scene:["バーらしい一杯","きりっと飲みたい","食前"]},
+{category:"ウォッカ",name:"ブラックルシアン",base:"ウォッカ",price:"900円",ingredients:["ウォッカ40","カルーア20"],method:"ビルド",glass:"オールドファッションド",garnish:"-",taste:["甘め","コーヒー","濃厚","食後向き"],scene:["食後","甘いものが飲みたい","ゆっくり飲みたい"]},
+{category:"ウォッカ",name:"ブラッディメアリー",base:"ウォッカ",price:"900円",ingredients:["ウォッカ30","トマトジュース90","レモンジュース1tsp","コショウ"],method:"シェイク",glass:"タンブラー",garnish:"-",taste:["トマト","スパイシー","食事向き"],scene:["食事中","甘くないものがいい","変化球"]},
+{category:"ウォッカ",name:"ブラッディシーザー",base:"ウォッカ",price:"900円",ingredients:["アブソルート30","クラマト","カットレモン","コショウ"],method:"ビルド",glass:"タンブラー",garnish:"レモン",taste:["旨味","スパイシー","食事向き"],scene:["食事中","甘くないものがいい","個性的なものがいい"]},
+{category:"ウォッカ",name:"レッドバード",base:"ウォッカ",price:"900円",ingredients:["ウォッカ","トマトジュース60","ビール60"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["トマト","ビール","軽やか"],scene:["食事中","ビール系がいい","変化球"]},
+
+{category:"ジン",name:"ジントニック",base:"ジン",price:"800円",ingredients:["ジン45","ライムジュース1tsp","カットライム","トニック"],method:"ビルド",glass:"タンブラー",garnish:"ライム",taste:["すっきり","柑橘","炭酸","定番"],scene:["最初の一杯","食事中","甘くないものが飲みたい"]},
+{category:"ジン",name:"ジンリッキー",base:"ジン",price:"800円",ingredients:["ジン45","ライムジュース1tsp","カットライム","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"ライム",taste:["すっきり","柑橘","炭酸","辛口"],scene:["甘くないものがいい","食事中","軽やかに飲みたい"]},
+{category:"ジン",name:"ジンバック",base:"ジン",price:"800円",ingredients:["ジン45","カットレモン","ジンジャーエール"],method:"ビルド",glass:"タンブラー",garnish:"レモン",taste:["爽快","ジンジャー","飲みやすい"],scene:["最初の一杯","迷った時","カジュアルに飲みたい"]},
+{category:"ジン",name:"ジンフィズ",base:"ジン",price:"900円",ingredients:["ジン45","レモンジュース15","シュガーシロップ1tsp","ソーダ"],method:"シェイク",glass:"タンブラー",garnish:"-",taste:["爽快","柑橘","炭酸","クラシック"],scene:["丁寧に飲みたい","定番","すっきりした甘さ"]},
+{category:"ジン",name:"ホワイトレディ",base:"ジン",price:"1000円",ingredients:["ジン30","コアントロー15","レモンジュース15"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["柑橘","シャープ","ショート","クラシック"],scene:["バーらしい一杯","食前","きりっと飲みたい"]},
+{category:"ジン",name:"ギムレット",base:"ジン",price:"1000円",ingredients:["ジン45","ライムジュース15","シュガーシロップ"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["柑橘","シャープ","ショート","クラシック"],scene:["バーらしい一杯","きりっと飲みたい","甘さ控えめ"]},
+{category:"ジン",name:"マティーニ",base:"ジン",price:"1200円",ingredients:["ドライベルモットミスト","タンカレー No.10 60"],method:"ステア",glass:"カクテルグラス",garnish:"-",taste:["辛口","クラシック","ショート","ドライ"],scene:["クラシックに飲みたい","バーらしい一杯","静かに飲みたい"]},
+{category:"ジン",name:"ネグローニ",base:"ジン",price:"1000円",ingredients:["ジン20","カンパリ20","スイートベルモット20"],method:"ステア",glass:"オールドファッションド",garnish:"オレンジピール",taste:["苦味","甘苦い","クラシック","食前"],scene:["食前","苦味が好き","大人っぽく飲みたい"]},
+{category:"ジン",name:"ロングアイランドアイスティー",base:"ジン",price:"1500円",ingredients:["ジン15","ウォッカ15","テキーラ15","ラム15","コアントロー15","レモンジュース20","コーラ"],method:"ビルド",glass:"タンブラー",garnish:"レモン",taste:["コーラ","甘酸っぱい","ロング","華やか"],scene:["盛り上がりたい","甘酸っぱいものがいい","ロングで飲みたい"]},
+{category:"ジン",name:"ジンライム",base:"ジン",price:"900円",ingredients:["ジン45","ライムジュース15","シュガーシロップ1tsp"],method:"ビルド",glass:"オールドファッションド",garnish:"ライム",taste:["柑橘","すっきり","ショート"],scene:["甘さ控えめ","きりっと飲みたい","シンプルに飲みたい"]},
+{category:"ジン",name:"タンカレー No.10 ソーダ",base:"ジン",price:"1000円",ingredients:["タンカレー No.10 30","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["すっきり","炭酸","ドライ"],scene:["甘くないものがいい","食事中","ジンをシンプルに飲みたい"]},
+
+{category:"テキーラ",name:"テキーラトニック",base:"テキーラ",price:"800円",ingredients:["テキーラ45","カットライム","トニック"],method:"ビルド",glass:"タンブラー",garnish:"ライム",taste:["爽快","柑橘","炭酸"],scene:["最初の一杯","すっきり飲みたい","甘すぎないものがいい"]},
+{category:"テキーラ",name:"ストローハット",base:"テキーラ",price:"1000円",ingredients:["テキーラ30","トマトジュース90","レモンジュース1tsp"],method:"シェイク",glass:"タンブラー",garnish:"-",taste:["トマト","すっきり","食事向き"],scene:["食事中","甘くないものがいい","変化球"]},
+{category:"テキーラ",name:"テキーラサンライズ",base:"テキーラ",price:"800円",ingredients:["テキーラ45","オレンジジュース","グレナデン2tsp"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","オレンジ","フルーティー"],scene:["飲みやすいものがいい","甘めがいい","華やかに飲みたい"]},
+{category:"テキーラ",name:"マタドール",base:"テキーラ",price:"1200円",ingredients:["テキーラ30","パイナップルジュース45","レモンジュース15"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["トロピカル","甘酸っぱい","フルーティー"],scene:["南国系がいい","飲みやすいものがいい","甘酸っぱいものが好き"]},
+{category:"テキーラ",name:"マルガリータ",base:"テキーラ",price:"1000円",ingredients:["テキーラ30","コアントロー15","レモンジュース15","塩スノースタイル"],method:"シェイク",glass:"カクテルグラス",garnish:"塩",taste:["柑橘","塩味","ショート","クラシック"],scene:["バーらしい一杯","きりっと飲みたい","塩味が好き"]},
+
+{category:"ラム",name:"ラムトニック",base:"ラム",price:"800円",ingredients:["ラム45","トニック"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["爽快","炭酸","軽やか"],scene:["最初の一杯","すっきり飲みたい","シンプルに飲みたい"]},
+{category:"ラム",name:"ソルクバーノ",base:"ラム",price:"900円",ingredients:["ラム30","グレープフルーツジュース45","トニック"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["柑橘","炭酸","爽快","フルーティー"],scene:["さっぱり飲みたい","フルーツ系","軽やかに飲みたい"]},
+{category:"ラム",name:"XYZ",base:"ラム",price:"1000円",ingredients:["ラム30","コアントロー15","レモンジュース15"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["柑橘","ショート","クラシック","シャープ"],scene:["バーらしい一杯","きりっと飲みたい","食前"]},
+{category:"ラム",name:"ボストンクーラー",base:"ラム",price:"900円",ingredients:["ラム45","レモンジュース15","シュガーシロップ1tsp","ジンジャーエール"],method:"シェイク",glass:"タンブラー",garnish:"-",taste:["爽快","ジンジャー","柑橘","ロング"],scene:["カジュアルに飲みたい","爽快なものがいい","ロングで飲みたい"]},
+{category:"ラム",name:"ダイキリ",base:"ラム",price:"1000円",ingredients:["ラム45","ライムジュース15","シュガーシロップ1tsp"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["柑橘","ショート","クラシック","すっきり"],scene:["バーらしい一杯","甘さ控えめ","きりっと飲みたい"]},
+{category:"ラム",name:"ラムクーラー",base:"ラム",price:"900円",ingredients:["ラム45","レモンジュース15","グレナデン1tsp","ソーダ"],method:"シェイク",glass:"タンブラー",garnish:"-",taste:["甘酸っぱい","炭酸","爽快","ロング"],scene:["飲みやすいものがいい","甘酸っぱいものが好き","軽やかに飲みたい"]},
+
+{category:"ウイスキー",name:"ハイボール",base:"ウイスキー",price:"800円",ingredients:["バランタイン45","カットレモン","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"レモン",taste:["すっきり","炭酸","ドライ","定番"],scene:["最初の一杯","食事中","甘くないものが飲みたい"]},
+{category:"ウイスキー",name:"ゴッドファーザー",base:"ウイスキー",price:"900円",ingredients:["バランタイン45","アマレット15"],method:"ビルド",glass:"オールドファッションド",garnish:"-",taste:["甘め","アーモンド","濃厚","食後向き"],scene:["食後","甘いものが飲みたい","ゆっくり飲みたい"]},
+{category:"ウイスキー",name:"マンハッタン",base:"ウイスキー",price:"1200円",ingredients:["バーボン40","スイートベルモット20","アンゴスチュラビターズ1dash","マラスキーノチェリー","レモンピール"],method:"ステア",glass:"カクテルグラス",garnish:"マラスキーノチェリー / レモンピール",taste:["クラシック","芳醇","ショート","食後向き"],scene:["バーらしい一杯","ゆっくり飲みたい","クラシックに飲みたい"]}
+,
+{category:"ラム",name:"モヒート",base:"ラム",price:"1000円",ingredients:["ラム45","ライム","ミント","シュガーシロップ1tsp","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"ミント / ライム",taste:["爽快","ミント","柑橘","炭酸"],scene:["さっぱり飲みたい","夏っぽく飲みたい","最初の一杯"]},
+
+{category:"リキュール",name:"グラスホッパー",base:"リキュール",price:"1000円",ingredients:["グリーンミントリキュール20","ホワイトカカオ20","生クリーム20"],method:"シェイク",glass:"カクテルグラス",garnish:"-",taste:["甘め","ミント","クリーミー","デザート"],scene:["食後","甘いものが飲みたい","デザート感覚"]},
+{category:"リキュール",name:"カルーアミルク",base:"リキュール",price:"800円",ingredients:["カルーア30","ミルク90"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","コーヒー","ミルキー","飲みやすい"],scene:["甘いものが飲みたい","食後","お酒感を抑えたい"]},
+{category:"リキュール",name:"カシスオレンジ",base:"リキュール",price:"800円",ingredients:["カシス30","オレンジジュース"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","フルーティー","オレンジ","飲みやすい"],scene:["初心者向き","甘めがいい","迷った時"]},
+{category:"リキュール",name:"カシスソーダ",base:"リキュール",price:"800円",ingredients:["カシス30","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘酸っぱい","炭酸","軽やか"],scene:["軽く飲みたい","甘すぎないものがいい","最初の一杯"]},
+{category:"リキュール",name:"カシスウーロン",base:"リキュール",price:"800円",ingredients:["カシス30","ウーロン茶"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","お茶割り","飲みやすい"],scene:["甘めがいい","落ち着いて飲みたい","カジュアルに飲みたい"]},
+{category:"リキュール",name:"ファジーネーブル",base:"リキュール",price:"800円",ingredients:["ピーチリキュール30","オレンジジュース"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","ピーチ","オレンジ","飲みやすい"],scene:["初心者向き","甘いものが飲みたい","フルーツ系"]},
+{category:"リキュール",name:"レゲエパンチ",base:"リキュール",price:"800円",ingredients:["ピーチリキュール30","ウーロン茶"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","お茶割り","ピーチ","飲みやすい"],scene:["落ち着いて飲みたい","甘めがいい","カジュアルに飲みたい"]},
+{category:"リキュール",name:"スプモーニ",base:"リキュール",price:"900円",ingredients:["カンパリ30","グレープフルーツジュース45","トニック"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["苦味","柑橘","炭酸","爽快"],scene:["甘すぎないものがいい","食前","さっぱり飲みたい"]},
+{category:"リキュール",name:"チャイナブルー",base:"リキュール",price:"900円",ingredients:["ライチリキュール30","ブルーキュラソー10","グレープフルーツジュース","トニック"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["フルーティー","柑橘","炭酸","華やか"],scene:["華やかに飲みたい","飲みやすいものがいい","見た目も楽しみたい"]},
+{category:"リキュール",name:"アマレットジンジャー",base:"リキュール",price:"800円",ingredients:["アマレット30","ジンジャーエール"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["甘め","アーモンド","ジンジャー","飲みやすい"],scene:["甘いものが飲みたい","カジュアルに飲みたい","食後寄り"]},
+{category:"リキュール",name:"カンパリソーダ",base:"リキュール",price:"800円",ingredients:["カンパリ30","ソーダ"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["苦味","炭酸","すっきり"],scene:["食前","甘くないものがいい","苦味が好き"]},
+{category:"リキュール",name:"カンパリオレンジ",base:"リキュール",price:"800円",ingredients:["カンパリ30","オレンジジュース"],method:"ビルド",glass:"タンブラー",garnish:"-",taste:["苦味","オレンジ","甘苦い"],scene:["食前","苦味が好き","飲みやすいものがいい"]}
+
+];
+
+const categories = ["すべて", ...Array.from(new Set(cocktails.map(item => item.category)))];
+let activeCategory = "すべて";
+
+const tabs = document.getElementById("tabs");
+const list = document.getElementById("list");
+const searchInput = document.getElementById("searchInput");
+
+function renderTabs() {
+  tabs.innerHTML = "";
+  categories.forEach(category => {
+    const button = document.createElement("button");
+    button.className = "tab" + (category === activeCategory ? " active" : "");
+    const count = category === "すべて"
+      ? cocktails.length
+      : cocktails.filter(item => item.category === category).length;
+    button.textContent = `${category} ${count}`;
+    button.onclick = () => {
+      activeCategory = category;
+      renderTabs();
+      renderList();
+    };
+    tabs.appendChild(button);
+  });
+}
+
+function getIce(item) {
+  const glass = String(item.glass || "");
+  const method = String(item.method || "");
+  const name = String(item.name || "");
+  const ingredients = (item.ingredients || []).join(" ");
+
+  if (glass.includes("カクテルグラス")) return "なし / グラス冷却";
+  if (name.includes("マティーニ") || name.includes("マンハッタン")) return "なし / グラス冷却";
+  if (glass.includes("オールドファッションド")) return "ロックアイス";
+  if (method.includes("シェイク") && !glass.includes("カクテルグラス")) return "シェイク時のみ / 提供時は氷あり";
+  if (ingredients.includes("ソーダ") || ingredients.includes("トニック") || ingredients.includes("ジンジャーエール") || ingredients.includes("コーラ")) return "ロックアイス";
+  return "ロックアイス";
+}
+
+function getPoint(item) {
+  const name = item.name;
+  const method = item.method;
+  const ingredients = (item.ingredients || []).join(" ");
+
+  const points = {
+    "ハイボール": "炭酸は最後。混ぜすぎず、氷を持ち上げる程度に軽くステア。",
+    "ジントニック": "トニックは最後。ライムを軽く絞って香りを出す。",
+    "ジンリッキー": "甘味を入れない。ライムの香りとソーダのキレを残す。",
+    "ジンバック": "ジンジャーエールは最後。レモンは軽く絞ってから入れる。",
+    "ジンフィズ": "ソーダ以外をしっかりシェイク。ソーダを入れた後は軽くなじませるだけ。",
+    "ホワイトレディ": "レモンの酸味が立つので、しっかり冷やしてシャープに仕上げる。",
+    "ギムレット": "ライムと甘味のバランスが重要。しっかり冷やす。",
+    "マティーニ": "グラスは冷やす。ベルモットはミストのみ。ステアは静かに。",
+    "ネグローニ": "氷を入れて冷やしながらステア。苦味と甘味を均一にする。",
+    "ロングアイランドアイスティー": "材料が多いので入れ忘れ注意。コーラは最後。",
+    "ジンライム": "ライムとシロップをなじませる。甘くしすぎない。",
+    "タンカレー No.10 ソーダ": "ジンの香りを活かす。ソーダは静かに注ぐ。",
+
+    "ウォッカリッキー": "甘味を入れず、ライムとソーダで軽く仕上げる。",
+    "モスコミュール": "ジンジャーエールは最後。ライムを軽く絞る。",
+    "ソルティドッグ": "先にスノースタイル。塩が厚くなりすぎないよう注意。",
+    "ブルドッグ": "塩なしのソルティドッグ。グレープフルーツをしっかり冷やす。",
+    "カミカゼ": "しっかりシェイクして冷やす。ライムの酸味を立たせる。",
+    "コスモポリタン": "色をきれいに出す。甘酸っぱく、冷たく仕上げる。",
+    "シーブリーズ": "ジュース同士をよくなじませる。軽くステア。",
+    "スクリュードライバー": "オレンジジュースをしっかり冷やす。軽くステア。",
+    "バラライカ": "レモンとコアントローのバランスを崩さない。しっかり冷やす。",
+    "ブラックルシアン": "カルーアが沈みやすいので軽くなじませる。",
+    "ブラッディメアリー": "コショウは入れすぎ注意。トマト感を残す。",
+    "ブラッディシーザー": "クラマトの旨味を活かす。コショウは控えめから。",
+    "レッドバード": "ビールは最後。泡立てすぎない。",
+
+    "テキーラトニック": "トニックは最後。ライムを軽く絞る。",
+    "ストローハット": "トマトジュース系。レモンを効かせすぎない。",
+    "テキーラサンライズ": "グレナデンは最後に静かに沈める。混ぜすぎない。",
+    "マタドール": "パイナップルをしっかり冷やす。泡立ちすぎに注意。",
+    "マルガリータ": "先にスノースタイル。しっかりシェイクして冷やす。",
+
+    "ラムトニック": "トニックは最後。ラムの甘い香りを残す。",
+    "ソルクバーノ": "グレープフルーツとトニックで軽やかに。混ぜすぎない。",
+    "XYZ": "レモンとコアントローのバランスが重要。しっかり冷やす。",
+    "ボストンクーラー": "ジンジャーエールは最後。シェイク後に炭酸を加える。",
+    "ダイキリ": "ライムとシロップのバランスが重要。しっかり冷やす。",
+    "ラムクーラー": "ソーダは最後。グレナデンを入れすぎない。",
+
+    "ゴッドファーザー": "アマレットの甘さが強いので、軽くなじませる程度。",
+    "マンハッタン": "グラスは冷やす。ステアは静かに。ビターズは1dash。",
+
+    "モヒート": "ミントを潰しすぎない。香りを出して、ソーダは最後に静かに注ぐ。",
+    "グラスホッパー": "クリーム系なのでしっかりシェイク。食後向きに冷たく仕上げる。",
+    "カルーアミルク": "ミルクを入れた後に軽くステア。混ぜすぎなくてよい。",
+    "カシスオレンジ": "オレンジジュースをしっかり冷やす。軽くステア。",
+    "カシスソーダ": "ソーダは最後。色を残して軽くなじませる。",
+    "カシスウーロン": "ウーロン茶で伸ばして軽くステア。甘さを重くしすぎない。",
+    "ファジーネーブル": "ピーチとオレンジを軽くなじませる。飲みやすさ重視。",
+    "レゲエパンチ": "ウーロン茶で伸ばして軽くステア。ピーチの甘さを残す。",
+    "スプモーニ": "トニックは最後。カンパリの苦味を立たせすぎず爽快に。",
+    "チャイナブルー": "ブルーキュラソーは色づけ。入れすぎ注意。",
+    "アマレットジンジャー": "ジンジャーエールは最後。アマレットの香りを残す。",
+    "カンパリソーダ": "ソーダは最後。苦味を活かして軽く仕上げる。",
+    "カンパリオレンジ": "オレンジで苦味をやわらげる。軽くステア。",
+  };
+
+  if (points[name]) return points[name];
+  if (method === "シェイク") return "しっかり冷やす。提供前にグラスを整える。";
+  if (ingredients.includes("ソーダ") || ingredients.includes("トニック") || ingredients.includes("ジンジャーエール") || ingredients.includes("コーラ")) {
+    return "炭酸は最後。混ぜすぎない。";
+  }
+  return "材料を入れ忘れないよう確認して、軽くなじませる。";
+}
+
+function getBuildOrder(item) {
+  const method = item.method;
+  const ingredients = (item.ingredients || []).join(" ");
+
+  if (method === "シェイク") return "氷 → 材料 → シェイク → グラスへ";
+  if (method === "ステア") return "氷 → 材料 → 静かにステア → グラスへ";
+  if (ingredients.includes("ソーダ") || ingredients.includes("トニック") || ingredients.includes("ジンジャーエール") || ingredients.includes("コーラ") || ingredients.includes("ビール")) {
+    return "氷 → ベース → 副材料 → 炭酸 → 軽くステア";
+  }
+  return "氷 → 材料 → 軽くステア";
+}
+
+function getGlassIcon(glass) {
+  const g = String(glass || "");
+
+  if (g.includes("カクテル")) return "▽";
+  if (g.includes("オールドファッションド")) return "?";
+  if (g.includes("マグ")) return "?";
+  return "?";
+}
+
+function cleanIngredients(item) {
+  const garnish = String(item.garnish || "").trim();
+  if (!garnish || garnish === "-") return item.ingredients || [];
+
+  return (item.ingredients || []).filter(ingredient => {
+    const text = String(ingredient);
+    if (garnish.includes("/") && garnish.split("/").some(g => text.includes(g.trim()))) return false;
+    if (garnish.includes("ライム") && (text.includes("カットライム") || text === "ライム")) return false;
+    if (garnish.includes("レモン") && (text.includes("カットレモン") || text === "レモン")) return false;
+    if (garnish.includes("ミント") && text === "ミント") return false;
+    if (garnish.includes("塩") && text.includes("塩")) return false;
+    if (garnish.includes("ピール") && text.includes("ピール")) return false;
+    if (garnish.includes("チェリー") && text.includes("チェリー")) return false;
+    return true;
+  });
+}
+
+function renderList() {
+  const keyword = searchInput.value.trim().toLowerCase();
+
+  const filtered = cocktails.filter(item => {
+    const categoryMatch = activeCategory === "すべて" || item.category === activeCategory;
+    const searchText = [
+      item.name, item.category, item.base, item.price, item.method, item.glass, item.garnish,
+      getIce(item), getBuildOrder(item), getPoint(item),
+      ...(item.ingredients || []), ...(item.taste || []), ...(item.scene || [])
+    ].join(" ").toLowerCase();
+    return categoryMatch && searchText.includes(keyword);
+  });
+
+  list.innerHTML = "";
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">該当するレシピがありません</div>';
+    return;
+  }
+
+  filtered.forEach(item => {
+    const card = document.createElement("section");
+    card.className = "card";
+    const displayIngredients = cleanIngredients(item);
+
+    card.innerHTML = `
+      <h2>${item.name}</h2>
+      <div class="meta">
+        <span class="badge">${item.category}</span>
+        <span class="badge">${item.price}</span>
+      </div>
+      <div class="ingredients">${displayIngredients.join(" / ")}</div>
+      <div class="info">
+        <div><strong>作り方</strong>：<span class="method">${item.method}</span></div>
+        <div class="glass-row">
+          <span class="glass-icon" aria-hidden="true">${getGlassIcon(item.glass)}</span>
+          <span><strong>グラス</strong>：${item.glass}</span>
+        </div>
+        <div><strong>氷</strong>：${getIce(item)}</div>
+        <div><strong>順番</strong>：${getBuildOrder(item)}</div>
+        <div><strong>ガーニッシュ</strong>：${item.garnish}</div>
+        <details class="point">
+          <summary>POINT</summary>
+          <div class="point-body">${getPoint(item)}</div>
+        </details>
+      </div>
+      <div class="tags">
+        ${(item.taste || []).map(t => `<span>${t}</span>`).join("")}
+        ${(item.scene || []).map(s => `<span>${s}</span>`).join("")}
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+searchInput.addEventListener("input", renderList);
+renderTabs();
+renderList();
+</script>
+</body>
+</html>
